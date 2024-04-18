@@ -2,7 +2,7 @@
 
 ### Description
 
-In week 'five' we've learned about a few different classifiers. In week five we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
+In week five we've learned about a few different classifiers. In week six we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
 
 For project 3, your goal is two-fold:
 1. Using Reddit's API, you'll collect posts from two subreddits of your choosing.

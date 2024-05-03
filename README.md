@@ -1,205 +1,67 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 3: Web APIs & NLP
+# Predicting Marvel and DC Subreddits using APIs and NLP
+by David Kanevsky
+General Assembly, Data Science Immersive
+May 2024
 
-### Description
+## Problem Statement
+Marvel and DC comics are two of the best known comic companies, that have published thousands of comic books and graphic novels, and created tens of thousands of comic book characters, several of which have transended the comic book medium and been turned into high profile movies, TV shows and video games.
 
-In week five we've learned about a few different classifiers. In week six we'll learn about webscraping, APIs, and Natural Language Processing (NLP). This project will put those skills to the test.
+However, one common critique is that while Marvel and DC comics may be different brand names, they actually have a lot of parallels in common with them. There are several [articles](https://collider.com/marvel-dc-characters-copycats/#:~:text=Comics%2C%20specifically%20those%20of%20the,%2C%20designs%2C%20and%20so%20on.) and even a [reddit thread](https://www.reddit.com/r/comicbooks/comments/15m0sln/similar_characters_between_marvel_and_dc/) about how many of the characters are very similar to each other. 
 
-For project 3, your goal is two-fold:
-1. Using Reddit's API, you'll collect posts from two subreddits of your choosing.
-2. You'll then use various NLP techniques to process your data before training a range of classifiers to determine where a given post came from.
+To see how similar or different the comic book companies are, I am going to use the [reddit api](https://www.reddit.com/dev/api/) to scrape the [DC comics](https://www.reddit.com/r/DCcomics/) and [Marvel](https://www.reddit.com/r/Marvel/) reddits. Using natural language processing, I will build several models to see if we can use the text to identify.
 
+Additionally, both companies have had [crossovers](https://dc.fandom.com/wiki/DC_Marvel_Crossovers) where the characters interact with each other.
 
-#### About the API
+## Process
+On April 26th, 2024, I pulled 2,891 reddit posts from the DC and Marvel comics subreddits. After cleaning the data to remove URLs and punctuation, and then removing duplicates (including what appear to be duplicate posts that have different number of up votes/up votes ratio, but have identical text in both the post and the title), I was left with 1,675 unique posts.
 
-In 2023, Reddit proposed and underwent a series of changes to its API that greatly affected the ways that users, developers, and academics interact with and access the troves of data that its community freely creates.
+While all the reddit posts had titles, nearly half (834) had no text in the body of the post, indicating the post was an image, video or a link that NLP would not be suitable on.
 
-While the cost of data storage cannot be ignored, the monetization of its API has led to a shutdown of massively popular third-party and stifled [important research](https://arxiv.org/search/?query=reddit&searchtype=all&source=header) in the social sciences (community formation/network analysis, hate speech, discourse analysis, etc.), cybersecurity (bot detection), and—importantly for us this week—the very large and diverse world of natural language processing (semantic analysis, translation, topic modeling, disambiguation, relationship extraction, etc).
+The workbooks should be read in the following order:
 
-While APIs like Pushshift that collected and stored Reddit's data from its inception are no longer accessible, we can still retrieve a limited amount of data directly from [Reddit's API](https://www.reddit.com/dev/api/). As with anytime you begin interacting with a new tool, you should familiarize yourself as much as possible with the documentation.
+1. 1-pulling-reddit-data.ipynb
 
-**We will do a walkthrough of how to access and submit a simple request to the Reddit API together.**
+This was where I accessed the Reddit API, got the posts and put them into CSVs of around 100 posts per CSV, and then combined the CSVs into 1 CSV called comics-reddit.csv.
 
----
-## Checkpoints and Advice
+Additionally, I also used the reddit API to pull data from the Babylon Bee and The Onion subreddits, and saved that data into another subdirectory called comedy-data. While I didn't end up using that data for this project, I scraped it to have as a back up in case there were issues with the DC/Marvel subreddit data and I needed to pivot topics.
 
-If you aren't familiar with [reddit](https://www.reddit.com/), go check it out and browse different subreddits. Each subreddit is like a forum on a different topic. [Here's a list of subreddits by topic.](https://www.reddit.com/r/ListOfSubreddits/wiki/listofsubreddits)
+2. 2-cleaning.ipynb
 
-Data Choices
-- In your project you can classify posts, comments, titles, or some combination of those things. What you choose will partly determine how difficult your data cleaning will be and how challenging the classification task will be for your algorithms. In your presentation and executive summary, **tell us what you used**.
-- You can also include other information from posts or comments as features, but you must include some text.
+This is where I cleaned the data by making everything lower case (so that when it ran counts on Marvel and marvel, it treated them as a single word), removed punctuation and URLs, and also removed duplicates. In addition to removing duplicates where all the columns were duplicated, I also removed the duplicates where there were multiple identical combined titles and posts. This was because while these posts seemed different because they had different numbers of up votes and up votes ratio, the identical text in both the post and title indicate that this was likely the same post, just pulled at a different. I also created several variables based on the length of the title and post in both characters and words, and whether the post has text or not. I also explored some data on the number of words in the subreddit titles and posts to understand what the impact of cleaning might do when it comes to analyzing and modeling the data.
 
-Subreddit Selection
-- The more similar the subreddits are, the more challenging (and interesting?!) your project will become.
-- Choose your subreddits as soon as you can and let us know your choices.  Consider the breakdown of the post count for each as well.
+3. 3-additional-EDA
 
-Data collection
-- You should have a script written to retrieve data from your subreddits of choice as soon as possible. Because the API only allows us to retrieve 1000 of the most recent new and popular posts at time, this script should be written so that you can execute it from the command line at regular intervals.
-- The more data you can pull the better for your classifier. **Ideally you will want data from at least 3000 unique, non-null posts from each subreddit.**
+This is where I also did some analysis on the up votes and up vote ratio for each subreddit on the cleaned data. While Marvel posts have a higher average number of up votes, that is because there are more outliers that get a very large number of upvotes (2,000+) than DC. The median number of upvotes and the mean/median number of the upvote ratio is similar between the two subreddits.
 
+4. Model-1-GS-CVEC
 
----
+This is where I extracted the text through a CountVectorizer function and ran a Logistic Regression through a Grid Search pipeline over 90 hyperparameters. This determined the best parameters were with maximum of 3,000 features, that features needed to appear at least twice, the ngram range is 1, and using English stop words. The model predicted whether a reddit title/post was from the Marvel or DC subreddit with 94.7% accuracy.
 
-### Requirements
+6. Model-2-GS_TFIDF
 
-- Gather and prepare your data using the `requests` library in a Python script.
-- Script suggestions:
-    - First time it runs:
-        - Gets user input on subreddits they want to collect information from
-        - Asks user for their API credentials
-        - Stores this information in a JSON file
-    - Submits requests to API until maximum number of posts have been retrieved
-    - Writes/appends post data to a singular file
-    - Creates and updates a transaction log recording the number of posts retrieved per script execution, the datetime of its execution, and the total number of posts retrieved to date
-        - This would ensure that the script was executed over several days' time
-    - Other considerations
-        - Added functionality to drop data you are confident you will not want for EDA or modeling
-        - Added functionality to drop duplicate posts from each successful round of API requests
-        - *Advanced bonus*: schedule a process for the script to be run automatically at regular intervals to avoid having to do it manually
-- **Create and compare at least two models**. These can be any classifier of your choosing: logistic regression, Naive Bayes, KNN, Random Forest Classifier, etc.
-  - **Bonus**: use a Naive Bayes classifier
-- Try to **build a robust commit history** on GHE for this project.
-- A Jupyter Notebook with your analysis for a **peer audience of data scientists.**
-- An executive summary of your results.
-- A short presentation outlining your process and findings for a semi-technical audience, shoot for **8 minutes**.
+This is where I extracted the text with Term Frequency - Inverse Document Frequency (TF-IDF) function to look at not only how often a feature appears, but how important the feature is based on the frequency it appears relative to other features. I ran a Logistic Regression through a Grid Search pipeline with 90 hyperparameters. This determined the best hyper parameters were with a maximum of 3,000 features, the features needed to appear at least twice, the Ngram range was 1, and using English stop words. The model predicted whether a reddit title/post was from the Marvel or DC subreddit with 95.2% accuracy. Since this model had a higher accuracy, I used this for the analysis. The model performed well because it was able to identify both the company names, as well as prominent characters that are more likely to appear in each relative subreddit. The incorrect predictions
 
-**Pro Tip:** You can find a good example executive summary [here](https://www.proposify.biz/blog/executive-summary).
+## Data Sets and Data Dictionary
 
----
+|Feature|Type|Description|
+|---|---|---|
+|title|object|The title of the reddit post|
+|post|object|The text of the body of a reddit post|
+|subreddit|object|Identifying whether the post came from the Marvel or DC subreddit|
+|up_votes|integer|The number of up votes the post received|
+|up_votes_ratio|float|The ratio between the up votes a post has received and the number of total votes it has received |
+|clean_title|object|The title of the reddit post, after punctuation and URLs are removed|
+|clean_post|object|The text of the reddit post, after punctuation and URLs are removed|
+|clean_text|object|The combined clean title and clean post|
+|title_length|int|The number of characters in the original title (before cleaning)|
+|post_length|int|The number of characters in the original post (before cleaning)|
+|title_word_count|int|The number of words in the original title (before cleaning) as defined by the spaces between words|
+|post_word_count|float|The number of words in the original post (before cleaning) as defined by the spaces between words|
+|post_has_text|int|Identifying whether after cleaning, a post has text (1) or not (0) |
 
-### Necessary Deliverables / Submission
+The first 5 columns (title, post, subreddit, up_votes, up_vote_ratio) are in both the original comics_reddit.csv and the cleaned_comics_data.csv. The remaining columns were added into the cleaned_comics_data.csv.
 
-- Code and executive summary must be in a clearly commented Jupyter Notebook.
-- You must submit your slide deck.
-- Deadlines:
-    - **Materials submitted**: 9 AM MT, Friday, May 3rd
-    - **Presentation**: 930 AM MT, Friday, May 3rd
+Additionally, there are CSVs (Marvel_04_26_x.csv and DCComics_04_26_x.csv) that are the original CSVs outputted when scraping the reddit API subreddit, with the X representing the order the post was scraped. These CSVs were then combined into the comics_reddit.csv. These CSVs have just the 5 first columns in the data dictionary.
 
----
-
-## Rubric
-You should make sure that you consider and/or follow most if not all of the considerations/recommendations outlined below **while** working through your project.
-
-For Project 3 the evaluation categories are as follows:<br>
-**The Data Science Process**
-- Problem Statement
-- Data Collection
-- Data Cleaning & EDA
-- Preprocessing & Modeling
-- Evaluation and Conceptual Understanding
-- Conclusion and Recommendations
-
-**Organization and Professionalism**
-- Organization
-- Visualizations
-- Python Syntax and Control Flow
-- Presentation
-
-**Scores will be out of 30 points based on the 10 categories in the rubric.** <br>
-*3 points per section*<br>
-
-| Score | Interpretation |
-| --- | --- |
-| **0** | *Project fails to meet the minimum requirements for this item.* |
-| **1** | *Project meets the minimum requirements for this item, but falls significantly short of portfolio-ready expectations.* |
-| **2** | *Project exceeds the minimum requirements for this item, but falls short of portfolio-ready expectations.* |
-| **3** | *Project meets or exceeds portfolio-ready expectations; demonstrates a thorough understanding of every outlined consideration.* |
-
-
-### The Data Science Process
-
-**Problem Statement**
-- Is it clear what the goal of the project is?
-- What type of model will be developed?
-- How will success be evaluated?
-- Is the scope of the project appropriate?
-- Is it clear who cares about this or why this is important to investigate?
-- Does the student consider the audience and the primary and secondary stakeholders?
-
-**Data Collection**
-- Was enough data gathered to generate a significant result?
-- Was data collected that was useful and relevant to the project?
-- Was data collection and storage optimized through custom functions, pipelines, and/or automation?
-- Was thought given to the server receiving the requests such as considering number of requests per second?
-
-**Data Cleaning and EDA**
-- Are missing values imputed/handled appropriately?
-- Are distributions examined and described?
-- Are outliers identified and addressed?
-- Are appropriate summary statistics provided?
-- Are steps taken during data cleaning and EDA framed appropriately?
-- Does the student address whether or not they are likely to be able to answer their problem statement with the provided data given what they've discovered during EDA?
-
-**Preprocessing and Modeling**
-- Is text data successfully converted to a matrix representation?
-- Are methods such as stop words, stemming, and lemmatization explored?
-- Does the student properly split and/or sample the data for validation/training purposes?
-- Does the student test and evaluate a variety of models to identify a production algorithm (**AT MINIMUM:** two classification models, **BONUS:** try a Naive Bayes)?
-- Does the student defend their choice of production model relevant to the data at hand and the problem?
-- Does the student explain how the model works and evaluate its performance successes/downfalls?
-
-**Evaluation and Conceptual Understanding**
-- Does the student accurately identify and explain the baseline score?
-- Does the student select and use metrics relevant to the problem objective?
-- Does the student interpret the results of their model for purposes of inference?
-- Is domain knowledge demonstrated when interpreting results?
-- Does the student provide appropriate interpretation with regards to descriptive and inferential statistics?
-
-**Conclusion and Recommendations**
-- Does the student provide appropriate context to connect individual steps back to the overall project?
-- Is it clear how the final recommendations were reached?
-- Are the conclusions/recommendations clearly stated?
-- Does the conclusion answer the original problem statement?
-- Does the student address how findings of this research can be applied for the benefit of stakeholders?
-- Are future steps to move the project forward identified?
-
-
-### Organization and Professionalism
-
-**Project Organization**
-- Are modules imported correctly (using appropriate aliases)?
-- Are data imported/saved using relative paths?
-- Does the README provide a good executive summary of the project?
-- Is markdown formatting used appropriately to structure notebooks?
-- Are there an appropriate amount of comments to support the code?
-- Are files & directories organized correctly?
-- Are there unnecessary files included?
-- Do files and directories have well-structured, appropriate, consistent names?
-- Is there a robust commit history?
-
-**Visualizations**
-- Are sufficient visualizations provided?
-- Do plots accurately demonstrate valid relationships?
-- Are plots labeled properly?
-- Are plots interpreted appropriately?
-- Are plots formatted and scaled appropriately for inclusion in a notebook-based technical report?
-
-**Python Syntax and Control Flow**
-- Is care taken to write human readable code?
-- Is the code syntactically correct (no runtime errors)?
-- Does the code generate desired results (logically correct)?
-- Does the code follows general best practices and style guidelines?
-- Are Pandas functions used appropriately?
-- Are `sklearn` and `NLTK` methods used appropriately?
-
-**Presentation**
-- Is the problem statement clearly presented?
-- Does a strong narrative run through the presentation building toward a final conclusion?
-- Are the conclusions/recommendations clearly stated?
-- Is the level of technicality appropriate for the intended audience?
-- Is the student substantially over or under time?
-- Does the student appropriately pace their presentation?
-- Does the student deliver their message with clarity and volume?
-- Are appropriate visualizations generated for the intended audience?
-- Are visualizations necessary and useful for supporting conclusions/explaining findings?
-
-
----
-
-### Why did we choose this project for you?
-This project covers three of the biggest concepts we cover in the class: Classification Modeling, Natural Language Processing and Data Wrangling/Acquisition.
-
-Part 1 of the project focuses on **Data wrangling/gathering/acquisition**. This is a very important skill as not all the data you will need will be in clean CSVs or a single table in SQL.  There is a good chance that wherever you land you will have to gather some data from some unstructured/semi-structured sources; when possible, requesting information from an API, but often scraping it because they don't have an API (or it's terribly documented).
-
-Part 2 of the project focuses on **Natural Language Processing** and converting standard text data (like Titles and Comments) into a format that allows us to analyze it and use it in modeling.
-
-Part 3 of the project focuses on **Classification Modeling**.  Given that project 2 was a regression focused problem, we needed to give you a classification focused problem to practice the various models, means of assessment and preprocessing associated with classification.   
+## Analysis
+Since the TF-IDF function with a Logistic Regression model had a higher accuracy, I used this for the analysis. The model performed well because it was able to identify both the company names, as well as prominent characters that are more likely to appear in each relative subreddit. Of the less than 5% predictions the model classified incorrectly, the majority (14 of 22) of those predictions, the model was not very confident whether a title/post was in the Marvel or DC subreddit (less than 60% probability of being in one subreddit or other). 
